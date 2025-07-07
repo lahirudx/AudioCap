@@ -8,6 +8,14 @@ struct SystemRecordingView: View {
 
     var body: some View {
         Section {
+            if !recorder.isRecording {
+                Toggle("Include Microphone", isOn: Binding(
+                    get: { recorder.includeMicrophone },
+                    set: { recorder.setIncludeMicrophone($0) }
+                ))
+                .disabled(recorder.isRecording)
+            }
+            
             HStack {
                 if recorder.isRecording {
                     Button("Stop") {
@@ -39,9 +47,11 @@ struct SystemRecordingView: View {
             }
         } header: {
             HStack {
-                RecordingIndicator(appIcon: NSImage(systemSymbolName: "speaker.wave.3", accessibilityDescription: "System Audio")!, isRecording: recorder.isRecording)
+                RecordingIndicator(appIcon: NSImage(systemSymbolName: recorder.includeMicrophone ? "mic.and.signal.meter" : "speaker.wave.3", accessibilityDescription: "System Audio")!, isRecording: recorder.isRecording)
 
-                Text(recorder.isRecording ? "Recording All System Audio" : "Ready to Record All System Audio")
+                Text(recorder.isRecording ? 
+                     (recorder.includeMicrophone ? "Recording System Audio + Microphone" : "Recording All System Audio") : 
+                     (recorder.includeMicrophone ? "Ready to Record System Audio + Microphone" : "Ready to Record All System Audio"))
                     .font(.headline)
                     .contentTransition(.identity)
             }
