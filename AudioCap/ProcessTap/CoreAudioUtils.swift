@@ -116,6 +116,11 @@ extension AudioObjectID {
         try read(kAudioTapPropertyFormat, defaultValue: AudioStreamBasicDescription())
     }
 
+    /// Reads the stream format for an audio device.
+    func readStreamFormat() throws -> AudioStreamBasicDescription {
+        try read(kAudioDevicePropertyStreamFormat, defaultValue: AudioStreamBasicDescription())
+    }
+
     private func requireSystemObject() throws {
         if self != .system { throw "Only supported for the system object." }
     }

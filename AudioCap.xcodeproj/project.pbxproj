@@ -15,6 +15,8 @@
 		F431729A2BF7A51A00D918A3 /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43172992BF7A51A00D918A3 /* RecordingView.swift */; };
 		F431729C2BF7B66A00D918A3 /* FileProxyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F431729B2BF7B66A00D918A3 /* FileProxyView.swift */; };
 		F43172A12BF7BF1300D918A3 /* RecordingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43172A02BF7BF1300D918A3 /* RecordingIndicator.swift */; };
+		F43172A32C0000010000001A /* SystemAudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43172A22C0000010000001A /* SystemAudioRecorder.swift */; };
+		F43172A52C0000020000001A /* SystemRecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43172A42C0000020000001A /* SystemRecordingView.swift */; };
 		F47AD9422BF5B61E005B75AC /* AudioCapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47AD9412BF5B61E005B75AC /* AudioCapApp.swift */; };
 		F47AD9442BF5B61E005B75AC /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47AD9432BF5B61E005B75AC /* RootView.swift */; };
 		F47AD9462BF5B61F005B75AC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F47AD9452BF5B61F005B75AC /* Assets.xcassets */; };
@@ -32,6 +34,8 @@
 		F431729B2BF7B66A00D918A3 /* FileProxyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileProxyView.swift; sourceTree = "<group>"; };
 		F431729E2BF7BB0E00D918A3 /* Main.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Main.xcconfig; sourceTree = "<group>"; };
 		F43172A02BF7BF1300D918A3 /* RecordingIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIndicator.swift; sourceTree = "<group>"; };
+		F43172A22C0000010000001A /* SystemAudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioRecorder.swift; sourceTree = "<group>"; };
+		F43172A42C0000020000001A /* SystemRecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemRecordingView.swift; sourceTree = "<group>"; };
 		F47AD93E2BF5B61E005B75AC /* AudioCap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioCap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F47AD9412BF5B61E005B75AC /* AudioCapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapApp.swift; sourceTree = "<group>"; };
 		F47AD9432BF5B61E005B75AC /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -66,6 +70,7 @@
 				F431728F2BF6A92900D918A3 /* AudioProcessController.swift */,
 				F43172932BF6B01000D918A3 /* ProcessTap.swift */,
 				F43172952BF787C300D918A3 /* CoreAudioUtils.swift */,
+				F43172A22C0000010000001A /* SystemAudioRecorder.swift */,
 			);
 			path = ProcessTap;
 			sourceTree = "<group>";
@@ -95,6 +100,7 @@
 				F47AD9432BF5B61E005B75AC /* RootView.swift */,
 				F43172912BF6ABB000D918A3 /* ProcessSelectionView.swift */,
 				F43172992BF7A51A00D918A3 /* RecordingView.swift */,
+				F43172A42C0000020000001A /* SystemRecordingView.swift */,
 				F431729B2BF7B66A00D918A3 /* FileProxyView.swift */,
 				F43172A02BF7BF1300D918A3 /* RecordingIndicator.swift */,
 				F431728E2BF691D900D918A3 /* Info.plist */,
@@ -141,7 +147,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 1530;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					F47AD93D2BF5B61E005B75AC = {
 						CreatedOnToolsVersion = 15.3;
@@ -193,6 +199,8 @@
 				F43172A12BF7BF1300D918A3 /* RecordingIndicator.swift in Sources */,
 				F43172962BF787C300D918A3 /* CoreAudioUtils.swift in Sources */,
 				F431729C2BF7B66A00D918A3 /* FileProxyView.swift in Sources */,
+				F43172A32C0000010000001A /* SystemAudioRecorder.swift in Sources */,
+				F43172A52C0000020000001A /* SystemRecordingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +242,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 57BP4Y8R9V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -299,7 +309,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 57BP4Y8R9V;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -329,8 +341,8 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"AudioCap/Preview Content\"";
-				DEVELOPMENT_TEAM = 57BP4Y8R9V;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -358,8 +370,8 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"AudioCap/Preview Content\"";
-				DEVELOPMENT_TEAM = 57BP4Y8R9V;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

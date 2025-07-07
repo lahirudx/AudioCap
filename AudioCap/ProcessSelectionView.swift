@@ -5,10 +5,47 @@ struct ProcessSelectionView: View {
     @State private var processController = AudioProcessController()
     @State private var tap: ProcessTap?
     @State private var recorder: ProcessTapRecorder?
+    @State private var systemRecorder: SystemAudioRecorder?
 
     @State private var selectedProcess: AudioProcess?
+    @State private var recordingMode: RecordingMode = .process
+
+    enum RecordingMode: String, CaseIterable {
+        case process = "Individual Process"
+        case system = "All System Audio"
+    }
 
     var body: some View {
+        Section {
+            Picker("Recording Mode", selection: $recordingMode) {
+                ForEach(RecordingMode.allCases, id: \.self) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .disabled(isAnyRecording)
+            .onChange(of: recordingMode) { _, _ in
+                teardownAll()
+            }
+        } header: {
+            Text("Source")
+                .font(.headline)
+        }
+
+        switch recordingMode {
+        case .process:
+            processSelectionSection
+        case .system:
+            systemRecordingSection
+        }
+    }
+    
+    private var isAnyRecording: Bool {
+        recorder?.isRecording == true || systemRecorder?.isRecording == true
+    }
+
+    @ViewBuilder
+    private var processSelectionSection: some View {
         Section {
             Picker("Process", selection: $selectedProcess) {
                 Text("Select…")
@@ -32,7 +69,7 @@ struct ProcessSelectionView: View {
                     }
                 }
             }
-            .disabled(recorder?.isRecording == true)
+            .disabled(isAnyRecording)
             .task { processController.activate() }
             .onChange(of: selectedProcess) { oldValue, newValue in
                 guard newValue != oldValue else { return }
@@ -43,9 +80,6 @@ struct ProcessSelectionView: View {
                     teardownTap()
                 }
             }
-        } header: {
-            Text("Source")
-                .font(.headline)
         }
 
         if let tap {
@@ -61,6 +95,25 @@ struct ProcessSelectionView: View {
                             createRecorder()
                         }
                     }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var systemRecordingSection: some View {
+        if let systemRecorder {
+            SystemRecordingView(recorder: systemRecorder)
+                .onChange(of: systemRecorder.isRecording) { wasRecording, isRecording in
+                    /// Each recorder instance can only record a single file, so we create a new file/recorder when recording stops.
+                    if wasRecording, !isRecording {
+                        createSystemRecorder()
+                    }
+                }
+        } else {
+            Section {
+                Button("Setup System Recording") {
+                    createSystemRecorder()
+                }
             }
         }
     }
@@ -85,6 +138,20 @@ struct ProcessSelectionView: View {
 
     private func teardownTap() {
         tap = nil
+    }
+
+    private func createSystemRecorder() {
+        let filename = "SystemAudio-\(Int(Date.now.timeIntervalSinceReferenceDate))"
+        let audioFileURL = URL.applicationSupport.appendingPathComponent(filename, conformingTo: .wav)
+        
+        let newRecorder = SystemAudioRecorder(fileURL: audioFileURL)
+        self.systemRecorder = newRecorder
+    }
+
+    private func teardownAll() {
+        teardownTap()
+        systemRecorder = nil
+        selectedProcess = nil
     }
 }
 
