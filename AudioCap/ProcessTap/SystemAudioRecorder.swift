@@ -156,13 +156,16 @@ final class SystemAudioRecorder {
         
         logger.info("Microphone format: \(inputFormat, privacy: .public)")
         
-        // Create mixer node and connect it properly
+        // Create mixer node
         let mixerNode = AVAudioMixerNode()
         audioEngine.attach(mixerNode)
         
-        // Connect input to mixer to main mixer (this creates a proper signal path)
+        // Connect input to a mixer node to enable the audio tap.
+        // DO NOT connect the mixer to the mainMixerNode, as that will cause playback.
         audioEngine.connect(inputNode, to: mixerNode, format: inputFormat)
-        audioEngine.connect(mixerNode, to: audioEngine.mainMixerNode, format: inputFormat)
+        
+        // Explicitly set the mixer's volume to 0 to prevent feedback.
+        mixerNode.outputVolume = 0
         
         // Install tap on input node for recording (after connections are made)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
