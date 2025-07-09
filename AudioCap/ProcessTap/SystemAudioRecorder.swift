@@ -12,6 +12,8 @@ final class SystemAudioRecorder {
     private(set) var isRecording = false
     private(set) var errorMessage: String?
     private(set) var includeMicrophone = true
+    private(set) var isPostProcessing = false
+    private(set) var postProcessingProgress: Float = 0.0
     
     @ObservationIgnored
     private var systemTap: SystemAudioTap?
@@ -25,6 +27,8 @@ final class SystemAudioRecorder {
     private var systemAudioInput: AVAssetWriterInput?
     @ObservationIgnored
     private var assetWriter: AVAssetWriter?
+    @ObservationIgnored
+    private var multiTrackFileURL: URL?
     
     init(fileURL: URL) {
         self.fileURL = fileURL
@@ -89,8 +93,13 @@ final class SystemAudioRecorder {
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
         
+        // Create temporary file for multi-track recording
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempFileName = "multitrack_\(UUID().uuidString).m4a"
+        multiTrackFileURL = tempDir.appendingPathComponent(tempFileName)
+        
         // Create asset writer for multi-track audio file
-        assetWriter = try AVAssetWriter(outputURL: fileURL, fileType: .m4a)
+        assetWriter = try AVAssetWriter(outputURL: multiTrackFileURL!, fileType: .m4a)
         
         // Create system audio input
         systemAudioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
@@ -321,8 +330,137 @@ final class SystemAudioRecorder {
         }
     }
     
-
+    // MARK: - Post Processing
     
+    @MainActor
+    private func mixTracksToSingleFile() async throws {
+        guard let multiTrackURL = multiTrackFileURL else {
+            throw "No multi-track file to process"
+        }
+        
+        logger.info("Starting post-processing to mix tracks")
+        isPostProcessing = true
+        postProcessingProgress = 0.0
+        
+        // Create AVAsset from the multi-track file
+        let asset = AVAsset(url: multiTrackURL)
+        
+        // Get audio tracks
+        let audioTracks = asset.tracks(withMediaType: .audio)
+        guard audioTracks.count >= 1 else {
+            throw "No audio tracks found in recording"
+        }
+        
+        logger.info("Found \(audioTracks.count) audio tracks for mixing")
+        
+        // Create composition
+        let composition = AVMutableComposition()
+        
+        // Create audio mix for controlling volumes
+        let audioMix = AVMutableAudioMix()
+        var mixParameters: [AVMutableAudioMixInputParameters] = []
+        
+        let duration = asset.duration
+        
+        // Create separate composition tracks for each source track to enable parallel mixing
+        for (index, sourceTrack) in audioTracks.enumerated() {
+            // Create a new composition track for each source track
+            guard let compositionTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                logger.warning("Failed to create composition track \(index)")
+                continue
+            }
+            
+            let trackTimeRange = CMTimeRange(start: .zero, duration: min(sourceTrack.timeRange.duration, duration))
+            
+            do {
+                // Insert the entire source track into its own composition track
+                try compositionTrack.insertTimeRange(trackTimeRange, of: sourceTrack, at: .zero)
+                
+                // Create mix parameters for this track
+                let mixParameter = AVMutableAudioMixInputParameters(track: compositionTrack)
+                
+                // Set volumes - you can adjust these ratios as needed
+                if index == 0 {
+                    // First track (system audio) - full volume
+                    mixParameter.setVolume(1.0, at: .zero)
+                } else {
+                    // Additional tracks (microphone) - slightly lower volume to prevent overpowering
+                    mixParameter.setVolume(0.8, at: .zero)
+                }
+                
+                mixParameters.append(mixParameter)
+                
+                logger.info("Added track \(index) to composition (duration: \(trackTimeRange.duration.seconds)s)")
+                
+            } catch {
+                logger.warning("Failed to insert track \(index): \(error)")
+            }
+        }
+        
+        audioMix.inputParameters = mixParameters
+        postProcessingProgress = 0.3
+        
+        // Create export session
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A) else {
+            throw "Failed to create export session"
+        }
+        
+        exportSession.outputURL = fileURL
+        exportSession.outputFileType = .m4a
+        exportSession.audioMix = audioMix
+        
+        // Remove existing file if it exists
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            try FileManager.default.removeItem(at: fileURL)
+        }
+        
+        postProcessingProgress = 0.5
+        
+        // Export with progress tracking
+        await withCheckedContinuation { continuation in
+            let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                Task { @MainActor in
+                    self.postProcessingProgress = 0.5 + (exportSession.progress * 0.4)
+                }
+            }
+            
+            exportSession.exportAsynchronously {
+                timer.invalidate()
+                continuation.resume()
+            }
+        }
+        
+        postProcessingProgress = 0.9
+        
+        // Check export status
+        switch exportSession.status {
+        case .completed:
+            logger.info("Successfully mixed tracks to single file")
+            
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: multiTrackURL)
+            multiTrackFileURL = nil
+            
+            postProcessingProgress = 1.0
+            
+        case .failed:
+            if let error = exportSession.error {
+                throw "Export failed: \(error.localizedDescription)"
+            } else {
+                throw "Export failed with unknown error"
+            }
+            
+        case .cancelled:
+            throw "Export was cancelled"
+            
+        default:
+            throw "Export finished with unexpected status: \(exportSession.status.rawValue)"
+        }
+        
+        isPostProcessing = false
+        logger.info("Post-processing completed successfully")
+    }
+
     @MainActor
     func stop() {
         logger.debug(#function)
@@ -350,8 +488,28 @@ final class SystemAudioRecorder {
             microphoneInput?.markAsFinished()
             
             writer.finishWriting { [weak self] in
-                DispatchQueue.main.async {
-                    self?.logger.info("Asset writer finished")
+                Task { @MainActor in
+                    guard let self = self else { return }
+                    
+                    self.logger.info("Asset writer finished")
+                    
+                    // If we recorded with microphone, perform post-processing
+                    if self.includeMicrophone && self.multiTrackFileURL != nil {
+                        do {
+                            try await self.mixTracksToSingleFile()
+                            self.logger.info("Post-processing completed successfully")
+                        } catch {
+                            self.logger.error("Post-processing failed: \(error, privacy: .public)")
+                            self.errorMessage = "Post-processing failed: \(error)"
+                            self.isPostProcessing = false
+                            
+                            // Clean up temporary file on error
+                            if let tempURL = self.multiTrackFileURL {
+                                try? FileManager.default.removeItem(at: tempURL)
+                                self.multiTrackFileURL = nil
+                            }
+                        }
+                    }
                 }
             }
         }
